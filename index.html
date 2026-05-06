@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wheel of Fortune Slot Machine</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>🎰 Wheel of Fortune 🎡</h1>
+      <button
+        id="sound-toggle"
+        class="sound-toggle"
+        aria-label="Toggle sound"
+        type="button"
+      >
+        🔊 Sound: ON
+      </button>
+    </header>
+
+    <main class="stage">
+      <section class="panel slot-panel" aria-label="Slot machine">
+        <h2>Slot Machine</h2>
+        <canvas
+          id="reels-canvas"
+          width="540"
+          height="240"
+          aria-label="Slot reels"
+        ></canvas>
+        <button id="spin-reels-btn" class="big-btn primary" type="button">
+          Spin Reels
+        </button>
+        <div class="info">
+          <div>
+            Spins until guaranteed bonus: <strong id="spins-left">10</strong>
+          </div>
+          <div id="reels-status" class="status"></div>
+        </div>
+      </section>
+
+      <section class="panel wheel-panel" aria-label="Bonus wheel">
+        <h2>Bonus Wheel</h2>
+        <canvas
+          id="wheel-canvas"
+          width="520"
+          height="520"
+          aria-label="Bonus wheel"
+        ></canvas>
+        <button
+          id="spin-wheel-btn"
+          class="big-btn bonus"
+          type="button"
+          disabled
+        >
+          Spin Wheel
+        </button>
+        <div class="info">
+          <div>Last prize: <strong id="last-prize">—</strong></div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="prize-modal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="prize-modal-title"
+    >
+      <div class="modal-card">
+        <h2 id="prize-modal-title">You won!</h2>
+        <p class="prize-label" id="prize-modal-label">—</p>
+        <button id="prize-modal-close" class="big-btn" type="button">
+          Awesome
+        </button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
