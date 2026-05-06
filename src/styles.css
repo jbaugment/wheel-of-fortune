@@ -1,5 +1,6 @@
 :root {
   --bg: #160407;
+  --panel: #2a040c;
   --panel-velvet: linear-gradient(
     180deg,
     #5a0814 0%,
@@ -14,6 +15,9 @@
     #e6b822 82%,
     #fff3a0 100%
   );
+  --brass-flat: #d4a017;
+  --brass-dark: #6a4a02;
+  --brass-light: #ffe680;
   --accent: #ffcf33;
   --accent-2: #ef476f;
   --text: #f8f9fa;
@@ -28,19 +32,31 @@ html,
 body {
   margin: 0;
   padding: 0;
-  /* Casino velvet + dark wood backdrop. Static — no animations on body. */
+  /* Casino floor: dark velvet + wood grain hints. Static — no animations on body. */
   background:
     radial-gradient(
-      ellipse at 20% 0%,
-      rgba(255, 200, 80, 0.12),
+      ellipse at 50% -10%,
+      rgba(255, 215, 0, 0.18),
+      transparent 45%
+    ),
+    radial-gradient(
+      ellipse at 15% 110%,
+      rgba(120, 0, 30, 0.55),
       transparent 55%
     ),
     radial-gradient(
-      ellipse at 80% 100%,
-      rgba(120, 0, 30, 0.55),
-      transparent 60%
+      ellipse at 85% 110%,
+      rgba(80, 30, 10, 0.55),
+      transparent 55%
     ),
-    linear-gradient(180deg, #2a0a0c 0%, #1a0407 50%, #0a0203 100%);
+    repeating-linear-gradient(
+      90deg,
+      rgba(60, 25, 10, 0.18) 0px,
+      rgba(60, 25, 10, 0.18) 2px,
+      transparent 2px,
+      transparent 6px
+    ),
+    linear-gradient(180deg, #2a0a0c 0%, #14040a 50%, #060102 100%);
   background-attachment: fixed;
   color: var(--text);
   font-family:
@@ -52,20 +68,24 @@ body {
 }
 
 .topbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 10px 24px;
+  position: fixed;
+  top: 14px;
+  right: 18px;
+  z-index: 50;
+  padding: 0;
 }
 
 .sound-toggle {
-  background: rgba(0, 0, 0, 0.45);
-  border: 2px solid var(--accent);
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid var(--brass-flat);
   color: var(--accent);
   padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
   cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .sound-toggle:hover {
@@ -76,17 +96,20 @@ body {
 
 .cabinet {
   max-width: 1280px;
-  margin: 0 auto 32px;
-  padding: 14px;
-  border-radius: 24px;
+  margin: 24px auto 40px;
+  padding: 18px;
+  border-radius: 28px;
   background:
-    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.05), transparent 60%),
+    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.06), transparent 60%),
     linear-gradient(180deg, #4a0510 0%, #2a040c 60%, #1a0207 100%);
-  border: 8px solid transparent;
-  border-image: var(--brass) 1;
+  border: 10px solid var(--brass-flat);
   box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.7),
-    inset 0 0 40px rgba(0, 0, 0, 0.6);
+    0 0 0 2px #6a4a02,
+    0 0 0 4px #2a1a02,
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.5),
+    0 24px 60px rgba(0, 0, 0, 0.75),
+    inset 0 0 60px rgba(0, 0, 0, 0.6);
 }
 
 .stage {
@@ -105,20 +128,39 @@ body {
 
 .panel {
   background: var(--panel-velvet);
-  border: 5px solid transparent;
-  border-image: var(--brass) 1;
-  border-radius: 18px;
-  padding: 18px;
+  border: 6px solid var(--brass-flat);
+  border-radius: 20px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.55),
+    0 0 0 2px #6a4a02,
     0 12px 30px rgba(0, 0, 0, 0.55),
-    inset 0 0 24px rgba(0, 0, 0, 0.5);
+    inset 0 0 30px rgba(0, 0, 0, 0.55);
 }
 
+/* Small per-panel marquee strip ("SLOT MACHINE", "BONUS WHEEL"). */
 .sub-marquee {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1a0207, #2a040c);
+  border: 2px solid var(--brass-flat);
+  box-shadow:
+    inset 0 0 12px rgba(0, 0, 0, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.sub-marquee-title {
   margin: 0;
   font-family: "Bungee", system-ui, sans-serif;
   font-size: 1.2rem;
@@ -126,7 +168,7 @@ body {
   color: #fff5b4;
   text-transform: uppercase;
   text-shadow:
-    0 0 6px rgba(255, 215, 0, 0.5),
+    0 0 6px rgba(255, 215, 0, 0.55),
     0 2px 0 #000;
 }
 
@@ -179,17 +221,18 @@ canvas {
   justify-content: center;
   gap: 14px;
   width: 100%;
-  padding: 14px 22px;
-  margin-bottom: 4px;
-  border-radius: 14px;
+  padding: 18px 26px;
+  margin-bottom: 16px;
+  border-radius: 16px;
   background:
-    radial-gradient(ellipse at top, rgba(255, 215, 100, 0.18), transparent 70%),
-    linear-gradient(180deg, #1a0207, #2a040c);
-  border: 4px solid transparent;
-  border-image: var(--brass) 1;
+    radial-gradient(ellipse at top, rgba(255, 215, 100, 0.22), transparent 70%),
+    linear-gradient(180deg, #1a0207, #2a040c 60%, #14040a);
+  border: 5px solid var(--brass-flat);
   box-shadow:
-    inset 0 0 20px rgba(0, 0, 0, 0.7),
-    0 4px 12px rgba(0, 0, 0, 0.5);
+    inset 0 0 24px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 2px #6a4a02,
+    0 6px 14px rgba(0, 0, 0, 0.55);
 }
 
 .marquee-title {
@@ -251,27 +294,22 @@ canvas {
 .reels-bezel {
   width: 100%;
   padding: 18px;
-  border-radius: 18px;
-  background: linear-gradient(
-    180deg,
-    #fff3a0 0%,
-    #e6b822 18%,
-    #b88410 50%,
-    #e6b822 82%,
-    #fff3a0 100%
-  );
+  border-radius: 20px;
+  background: var(--brass);
+  border: 2px solid #6a4a02;
   box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.5),
+    0 10px 22px rgba(0, 0, 0, 0.55),
     inset 0 2px 4px rgba(255, 255, 255, 0.7),
     inset 0 -3px 6px rgba(0, 0, 0, 0.4);
 }
 
 .reels-window {
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 8px;
   background: #0a0a12;
+  border: 2px solid #1a0207;
   box-shadow:
-    inset 0 6px 14px rgba(0, 0, 0, 0.85),
+    inset 0 8px 16px rgba(0, 0, 0, 0.9),
     inset 0 -2px 4px rgba(255, 255, 255, 0.05);
 }
 
@@ -283,15 +321,16 @@ canvas {
   height: auto;
 }
 
-/* ----- Bonus wheel bezel (matches reels bezel — gold + recessed) ----- */
+/* ----- Bonus wheel bezel (matches reels bezel — gold + recessed circle) ----- */
 
 .wheel-bezel {
   width: 100%;
-  padding: 16px;
+  padding: 18px;
   border-radius: 50%;
   background: var(--brass);
+  border: 2px solid #6a4a02;
   box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.55),
+    0 10px 22px rgba(0, 0, 0, 0.6),
     inset 0 2px 4px rgba(255, 255, 255, 0.7),
     inset 0 -3px 6px rgba(0, 0, 0, 0.45);
 }
@@ -300,8 +339,9 @@ canvas {
   border-radius: 50%;
   padding: 6px;
   background: #0a0a12;
+  border: 2px solid #1a0207;
   box-shadow:
-    inset 0 6px 16px rgba(0, 0, 0, 0.85),
+    inset 0 8px 18px rgba(0, 0, 0, 0.9),
     inset 0 -2px 6px rgba(255, 255, 255, 0.05);
 }
 
@@ -432,18 +472,32 @@ canvas {
 }
 
 .modal-card {
-  background: var(--panel);
-  border: 4px solid var(--accent);
-  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at top, rgba(255, 215, 100, 0.16), transparent 65%),
+    var(--panel-velvet);
+  border: 6px solid var(--brass-flat);
+  border-radius: 20px;
   padding: 36px 48px;
   text-align: center;
   max-width: 90vw;
+  box-shadow:
+    0 0 0 2px #6a4a02,
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 30px rgba(0, 0, 0, 0.55),
+    0 24px 60px rgba(0, 0, 0, 0.7);
 }
 
 .modal-card h2 {
   margin: 0 0 12px;
-  color: var(--accent);
+  font-family: "Bungee", system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  color: #fff5b4;
   font-size: 2rem;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 6px rgba(255, 215, 0, 0.6),
+    0 2px 0 #000;
 }
 
 .modal-card .prize-label {
@@ -451,4 +505,14 @@ canvas {
   font-size: 2.6rem;
   font-weight: 800;
   color: var(--text);
+}
+
+.modal-card .big-btn {
+  background: linear-gradient(180deg, #ffe680 0%, #f6c324 50%, #c8890b 100%);
+  color: #2a1c00;
+  border: 2px solid #6a4a02;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25),
+    0 4px 10px rgba(0, 0, 0, 0.45);
 }
