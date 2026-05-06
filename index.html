@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wheel of Fortune Slot Machine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
@@ -21,20 +27,29 @@
 
     <main class="stage">
       <section class="panel slot-panel" aria-label="Slot machine">
-        <h2>Slot Machine</h2>
-        <canvas
-          id="reels-canvas"
-          width="540"
-          height="240"
-          aria-label="Slot reels"
-        ></canvas>
-        <button id="spin-reels-btn" class="big-btn primary" type="button">
-          Spin Reels
+        <div class="marquee">
+          <span class="marquee-light"></span>
+          <span class="marquee-light"></span>
+          <span class="marquee-light"></span>
+          <h2 class="marquee-title">Wheel of Fortune</h2>
+          <span class="marquee-light"></span>
+          <span class="marquee-light"></span>
+          <span class="marquee-light"></span>
+        </div>
+        <div class="reels-bezel">
+          <div class="reels-window">
+            <canvas
+              id="reels-canvas"
+              width="540"
+              height="240"
+              aria-label="Slot reels"
+            ></canvas>
+          </div>
+        </div>
+        <button id="spin-reels-btn" class="slot-spin-btn" type="button">
+          <span class="slot-spin-btn-inner">SPIN</span>
         </button>
         <div class="info">
-          <div>
-            Spins until guaranteed bonus: <strong id="spins-left">10</strong>
-          </div>
           <div id="reels-status" class="status"></div>
         </div>
       </section>

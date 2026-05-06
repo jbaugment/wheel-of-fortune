@@ -29,12 +29,17 @@ export interface ReelTickHandler {
   (): void;
 }
 
+export interface ReelStopHandler {
+  (reelIndex: number, symbol: ReelSymbol): void;
+}
+
 export class ReelsView {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly canvas: HTMLCanvasElement;
   private readonly reels: ReelVisual[] = [];
   private rafHandle: number | null = null;
   private onTick: ReelTickHandler | null = null;
+  private onReelStop: ReelStopHandler | null = null;
   private resolveCurrent: (() => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -57,6 +62,11 @@ export class ReelsView {
 
   setOnTick(handler: ReelTickHandler | null): void {
     this.onTick = handler;
+  }
+
+  /** Fires once per reel as it comes to rest, with its final symbol. */
+  setOnReelStop(handler: ReelStopHandler | null): void {
+    this.onReelStop = handler;
   }
 
   /** Animate the reels and resolve when all have stopped. */
@@ -92,12 +102,14 @@ export class ReelsView {
 
   private frame(now: number): void {
     let anyActive = false;
-    for (const r of this.reels) {
+    for (let i = 0; i < this.reels.length; i++) {
+      const r = this.reels[i]!;
       if (r.spinning) {
         anyActive = true;
         if (now >= r.stopAt) {
           r.spinning = false;
           r.current = r.target;
+          this.onReelStop?.(i, r.current);
         } else if (now - r.lastTick >= REEL_TICK_MS) {
           r.lastTick = now;
           const idx = Math.floor(Math.random() * REEL_SYMBOLS.length);

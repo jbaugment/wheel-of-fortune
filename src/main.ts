@@ -6,11 +6,13 @@ import {
   advanceAfterReelSpin,
   createInitialState,
   isTripleWheel,
-  pickWedge,
-  spinsUntilGuaranteed,
+  pickWedgeWithCooldown,
 } from "./game";
 import { ReelsView } from "./reels";
 import { WheelView } from "./wheel";
+
+// Words spoken (per reel) when that reel lands on the Wheel symbol.
+const REEL_WHEEL_WORDS = ["Wheel", "Of", "Fortune"] as const;
 
 function byId<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -24,7 +26,6 @@ function init(): void {
   const spinReelsBtn = byId<HTMLButtonElement>("spin-reels-btn");
   const spinWheelBtn = byId<HTMLButtonElement>("spin-wheel-btn");
   const soundToggle = byId<HTMLButtonElement>("sound-toggle");
-  const spinsLeftEl = byId<HTMLElement>("spins-left");
   const reelsStatusEl = byId<HTMLElement>("reels-status");
   const lastPrizeEl = byId<HTMLElement>("last-prize");
   const modal = byId<HTMLElement>("prize-modal");
@@ -37,9 +38,13 @@ function init(): void {
   const wheelView = new WheelView(wheelCanvas, WEDGES);
 
   reelsView.setOnTick(() => sound.tick());
+  reelsView.setOnReelStop((reelIndex, symbol) => {
+    if (symbol !== "Wheel") return;
+    const word = REEL_WHEEL_WORDS[reelIndex];
+    if (word) sound.speak(word);
+  });
 
   const refreshUi = (): void => {
-    spinsLeftEl.textContent = String(spinsUntilGuaranteed(state));
     spinWheelBtn.disabled = !state.bonusAvailable;
     lastPrizeEl.textContent = state.lastPrize ?? "—";
   };
@@ -75,7 +80,7 @@ function init(): void {
   spinWheelBtn.addEventListener("click", async () => {
     if (!state.bonusAvailable) return;
     setBusy(true);
-    const target = pickWedge(WEDGES, Math.random);
+    const target = pickWedgeWithCooldown(WEDGES, Math.random);
     try {
       await wheelView.spinTo(target, Math.random);
     } finally {

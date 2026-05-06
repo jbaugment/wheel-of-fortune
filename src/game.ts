@@ -4,6 +4,9 @@
 import {
   GUARANTEED_TRIPLE_WHEEL_AT,
   REEL_SYMBOLS,
+  SWITCH_COOLDOWN_MS,
+  SWITCH_LABEL,
+  SWITCH_LAST_WIN_KEY,
   type ReelSymbol,
   type Wedge,
 } from "./config";
@@ -67,6 +70,77 @@ export function pickWedge(wedges: readonly Wedge[], rng: () => number): Wedge {
   }
   // Floating-point fallback.
   return wedges[wedges.length - 1]!;
+}
+
+/**
+ * Minimal Storage-like interface so the cooldown logic can be tested without
+ * a real `localStorage`. Only the methods we use are required.
+ */
+export interface CooldownStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+export interface CooldownOptions {
+  /** Returns the current epoch ms. Defaults to `Date.now`. */
+  now?: () => number;
+  /** Storage backend. Defaults to `window.localStorage` when available. */
+  storage?: CooldownStorage | null;
+}
+
+function defaultStorage(): CooldownStorage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** Read the timestamp of the last Switch win, or null if not present/invalid. */
+export function readLastSwitchWinAt(
+  storage: CooldownStorage | null,
+): number | null {
+  if (!storage) return null;
+  const raw = storage.getItem(SWITCH_LAST_WIN_KEY);
+  if (!raw) return null;
+  const t = Date.parse(raw);
+  return Number.isFinite(t) ? t : null;
+}
+
+/** True if the Nintendo Switch wedge is currently on cooldown. */
+export function isSwitchOnCooldown(
+  now: number,
+  storage: CooldownStorage | null,
+): boolean {
+  const last = readLastSwitchWinAt(storage);
+  if (last == null) return false;
+  return now - last < SWITCH_COOLDOWN_MS;
+}
+
+/**
+ * Wrapper around `pickWedge` that enforces the 24h cooldown on the Nintendo
+ * Switch wedge. When the Switch is on cooldown it is excluded from the random
+ * draw and a wedge is picked from the remaining wedges using their weights.
+ * When the picked wedge is the Switch, the current timestamp is persisted.
+ *
+ * `pickWedge` is left untouched so its behavior remains pure and predictable.
+ */
+export function pickWedgeWithCooldown(
+  wedges: readonly Wedge[],
+  rng: () => number,
+  opts: CooldownOptions = {},
+): Wedge {
+  const now = (opts.now ?? Date.now)();
+  const storage = opts.storage === undefined ? defaultStorage() : opts.storage;
+  const eligible = isSwitchOnCooldown(now, storage)
+    ? wedges.filter((w) => w.label !== SWITCH_LABEL)
+    : wedges;
+  const picked = pickWedge(eligible, rng);
+  if (picked.label === SWITCH_LABEL && storage) {
+    storage.setItem(SWITCH_LAST_WIN_KEY, new Date(now).toISOString());
+  }
+  return picked;
 }
 
 /** Mutable game state tracked by the controller. */
