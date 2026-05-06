@@ -1,10 +1,23 @@
 :root {
-  --bg: #0c0e16;
-  --panel: #161826;
+  --bg: #160407;
+  --panel-velvet: linear-gradient(
+    180deg,
+    #5a0814 0%,
+    #3a0510 60%,
+    #2a040c 100%
+  );
+  --brass: linear-gradient(
+    180deg,
+    #fff3a0 0%,
+    #e6b822 18%,
+    #b88410 50%,
+    #e6b822 82%,
+    #fff3a0 100%
+  );
   --accent: #ffcf33;
   --accent-2: #ef476f;
   --text: #f8f9fa;
-  --muted: #adb5bd;
+  --muted: #d8c8a0;
 }
 
 * {
@@ -15,7 +28,20 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: radial-gradient(circle at top, #1a1d2e, var(--bg));
+  /* Casino velvet + dark wood backdrop. Static — no animations on body. */
+  background:
+    radial-gradient(
+      ellipse at 20% 0%,
+      rgba(255, 200, 80, 0.12),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 80% 100%,
+      rgba(120, 0, 30, 0.55),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #2a0a0c 0%, #1a0407 50%, #0a0203 100%);
+  background-attachment: fixed;
   color: var(--text);
   font-family:
     system-ui,
@@ -28,19 +54,12 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 24px;
-  border-bottom: 2px solid rgba(255, 207, 51, 0.4);
-}
-
-.topbar h1 {
-  margin: 0;
-  font-size: 1.8rem;
-  letter-spacing: 0.04em;
+  justify-content: flex-end;
+  padding: 10px 24px;
 }
 
 .sound-toggle {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.45);
   border: 2px solid var(--accent);
   color: var(--accent);
   padding: 8px 14px;
@@ -50,14 +69,31 @@ body {
 }
 
 .sound-toggle:hover {
-  background: rgba(255, 207, 51, 0.1);
+  background: rgba(255, 207, 51, 0.15);
+}
+
+/* ----- Cabinet (whole page wraps both machines) ----- */
+
+.cabinet {
+  max-width: 1280px;
+  margin: 0 auto 32px;
+  padding: 14px;
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.05), transparent 60%),
+    linear-gradient(180deg, #4a0510 0%, #2a040c 60%, #1a0207 100%);
+  border: 8px solid transparent;
+  border-image: var(--brass) 1;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.7),
+    inset 0 0 40px rgba(0, 0, 0, 0.6);
 }
 
 .stage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  padding: 24px;
+  gap: 20px;
+  padding: 16px;
   align-items: start;
 }
 
@@ -68,21 +104,30 @@ body {
 }
 
 .panel {
-  background: var(--panel);
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--panel-velvet);
+  border: 5px solid transparent;
+  border-image: var(--brass) 1;
+  border-radius: 18px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.55),
+    inset 0 0 24px rgba(0, 0, 0, 0.5);
 }
 
-.panel h2 {
+.sub-marquee {
   margin: 0;
-  font-size: 1.4rem;
-  color: var(--accent);
-  letter-spacing: 0.06em;
+  font-family: "Bungee", system-ui, sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.16em;
+  color: #fff5b4;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 6px rgba(255, 215, 0, 0.5),
+    0 2px 0 #000;
 }
 
 canvas {
@@ -126,58 +171,46 @@ canvas {
   color: #fff;
 }
 
-/* ----- Slot machine cabinet ----- */
+/* ----- Cabinet marquee header (spans both machines) ----- */
 
-.slot-panel {
-  background:
-    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.06), transparent 60%),
-    linear-gradient(180deg, #5a0814 0%, #3a0510 60%, #2a040c 100%);
-  border: 6px solid transparent;
-  border-image: linear-gradient(
-      180deg,
-      #fff3a0 0%,
-      #d4a017 25%,
-      #8a6508 55%,
-      #d4a017 80%,
-      #fff3a0 100%
-    )
-    1;
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.6),
-    inset 0 0 24px rgba(0, 0, 0, 0.5);
-}
-
-.marquee {
+.cabinet-marquee {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 14px;
   width: 100%;
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #1a0207, #2a040c);
-  border: 2px solid rgba(255, 215, 0, 0.6);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+  padding: 14px 22px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at top, rgba(255, 215, 100, 0.18), transparent 70%),
+    linear-gradient(180deg, #1a0207, #2a040c);
+  border: 4px solid transparent;
+  border-image: var(--brass) 1;
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.7),
+    0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .marquee-title {
   margin: 0;
   font-family: "Bungee", "Black Ops One", system-ui, sans-serif;
-  font-size: 1.9rem;
-  letter-spacing: 0.08em;
+  font-size: 2.6rem;
+  letter-spacing: 0.1em;
   color: #fff5b4;
+  text-transform: uppercase;
   text-shadow:
-    0 0 6px rgba(255, 215, 0, 0.6),
-    0 0 14px rgba(255, 100, 0, 0.4),
-    0 2px 0 #000;
+    0 0 8px rgba(255, 215, 0, 0.7),
+    0 0 18px rgba(255, 100, 0, 0.5),
+    0 3px 0 #000;
 }
 
 .marquee-light {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #fff7c2, #ffb800 60%, #7a4a00);
-  box-shadow: 0 0 8px rgba(255, 200, 0, 0.9);
+  box-shadow: 0 0 10px rgba(255, 200, 0, 0.95);
   animation: marquee-blink 1.2s infinite ease-in-out;
 }
 .marquee-light:nth-child(1) {
@@ -189,7 +222,7 @@ canvas {
 .marquee-light:nth-child(3) {
   animation-delay: 0.3s;
 }
-.marquee-light:nth-child(5) {
+.marquee-light:nth-child(4) {
   animation-delay: 0.45s;
 }
 .marquee-light:nth-child(6) {
@@ -197,6 +230,12 @@ canvas {
 }
 .marquee-light:nth-child(7) {
   animation-delay: 0.75s;
+}
+.marquee-light:nth-child(8) {
+  animation-delay: 0.9s;
+}
+.marquee-light:nth-child(9) {
+  animation-delay: 1.05s;
 }
 
 @keyframes marquee-blink {
@@ -244,7 +283,39 @@ canvas {
   height: auto;
 }
 
-.slot-spin-btn {
+/* ----- Bonus wheel bezel (matches reels bezel — gold + recessed) ----- */
+
+.wheel-bezel {
+  width: 100%;
+  padding: 16px;
+  border-radius: 50%;
+  background: var(--brass);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.55),
+    inset 0 2px 4px rgba(255, 255, 255, 0.7),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.45);
+}
+
+.wheel-window {
+  border-radius: 50%;
+  padding: 6px;
+  background: #0a0a12;
+  box-shadow:
+    inset 0 6px 16px rgba(0, 0, 0, 0.85),
+    inset 0 -2px 6px rgba(255, 255, 255, 0.05);
+}
+
+.wheel-window canvas {
+  display: block;
+  background: #0a0a12;
+  border-radius: 50%;
+  width: 100%;
+  height: auto;
+}
+
+/* ----- Shared casino-spin button (base + red/gold variants) ----- */
+
+.casino-spin-btn {
   position: relative;
   min-height: 60px;
   width: 220px;
@@ -252,9 +323,9 @@ canvas {
   border: none;
   border-radius: 36px;
   cursor: pointer;
-  background: linear-gradient(180deg, #7a0a0a 0%, #4a0303 100%);
+  background: linear-gradient(180deg, #2a1a02 0%, #14090a 100%);
   box-shadow:
-    0 6px 0 #2a0202,
+    0 6px 0 rgba(0, 0, 0, 0.85),
     0 10px 18px rgba(0, 0, 0, 0.55);
   transition:
     transform 0.05s ease,
@@ -262,7 +333,7 @@ canvas {
     filter 0.15s ease;
 }
 
-.slot-spin-btn-inner {
+.casino-spin-btn-inner {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,16 +341,9 @@ canvas {
   margin: 2px;
   border-radius: 32px;
   font-family: "Bungee", system-ui, sans-serif;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   letter-spacing: 0.18em;
   color: #fff5d6;
-  background: linear-gradient(
-    180deg,
-    #ff6b6b 0%,
-    #e63946 35%,
-    #b81d2a 75%,
-    #7a0e18 100%
-  );
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.55),
     inset 0 -3px 6px rgba(0, 0, 0, 0.45);
@@ -288,21 +352,51 @@ canvas {
     0 0 6px rgba(255, 200, 0, 0.4);
 }
 
-.slot-spin-btn:hover:not(:disabled) {
+.casino-spin-btn:hover:not(:disabled) {
   filter: brightness(1.05);
 }
 
-.slot-spin-btn:active:not(:disabled) {
+.casino-spin-btn:active:not(:disabled) {
   transform: translateY(4px);
   box-shadow:
-    0 2px 0 #2a0202,
+    0 2px 0 rgba(0, 0, 0, 0.85),
     0 4px 8px rgba(0, 0, 0, 0.55);
 }
 
-.slot-spin-btn:disabled {
+.casino-spin-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   filter: grayscale(0.4);
+}
+
+.casino-spin-btn--red {
+  background: linear-gradient(180deg, #7a0a0a 0%, #4a0303 100%);
+}
+.casino-spin-btn--red .casino-spin-btn-inner {
+  background: linear-gradient(
+    180deg,
+    #ff6b6b 0%,
+    #e63946 35%,
+    #b81d2a 75%,
+    #7a0e18 100%
+  );
+}
+
+.casino-spin-btn--gold {
+  background: linear-gradient(180deg, #6a4a02 0%, #3a2401 100%);
+}
+.casino-spin-btn--gold .casino-spin-btn-inner {
+  background: linear-gradient(
+    180deg,
+    #ffe680 0%,
+    #f6c324 30%,
+    #c8890b 70%,
+    #6a4a02 100%
+  );
+  color: #2a1c00;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 6px rgba(255, 200, 0, 0.3);
 }
 
 .info {
