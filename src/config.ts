@@ -28,17 +28,28 @@ export interface Wedge {
   weight?: number; // defaults to 1
 }
 
-// Default booth-prize wedge set. Equal weight unless overridden.
+// Booth-prize wedge set, clockwise from 12 o'clock. Equal weight by default;
+// the Nintendo Switch wedge has an additional 24h cooldown enforced by
+// pickWedgeWithCooldown (see game.ts).
 export const WEDGES: readonly Wedge[] = [
-  { label: "$100", color: "#e63946" },
-  { label: "$50", color: "#f1a208" },
-  { label: "Try Again", color: "#6c757d" },
-  { label: "Free Spin", color: "#06a77d" },
-  { label: "$500", color: "#9b5de5" },
-  { label: "$25", color: "#118ab2" },
-  { label: "Mystery Box", color: "#ef476f" },
-  { label: "$10", color: "#073b4c" },
+  { label: "Hat", color: "#e63946" },
+  { label: "Bag", color: "#f59e0b" },
+  { label: "Socks", color: "#06a77d" },
+  { label: "Shirt", color: "#118ab2" },
+  { label: "Swag Bag", color: "#9b5de5" },
+  { label: "Winner's Choice", color: "#ef476f" },
+  { label: "Nintendo Switch", color: "#ff7849" },
+  { label: "Free Spin", color: "#22d3ee" },
 ] as const;
+
+// Label of the cooldown-restricted wedge (must match a label in WEDGES).
+export const SWITCH_LABEL = "Nintendo Switch";
+
+// localStorage key used to persist the timestamp of the last Switch win.
+export const SWITCH_LAST_WIN_KEY = "wof:lastSwitchWinAt";
+
+// Cooldown window for the Nintendo Switch wedge: 24 hours in ms.
+export const SWITCH_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 // Reel animation tunables.
 export const REEL_SPIN_BASE_MS = 1400; // first reel
