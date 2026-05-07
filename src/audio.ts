@@ -81,6 +81,16 @@ export class SoundController {
     ]);
   }
 
+  /** A short bell melody played after the spoken "Fortune" on a triple-Wheel. */
+  bells(): void {
+    this.melody([
+      { freq: 523.25, duration: 0.18 },
+      { freq: 659.25, duration: 0.18 },
+      { freq: 783.99, duration: 0.18 },
+      { freq: 1046.5, duration: 0.32 },
+    ]);
+  }
+
   private beep(opts: {
     freq: number;
     duration: number;

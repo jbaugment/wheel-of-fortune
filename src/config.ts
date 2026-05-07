@@ -42,14 +42,27 @@ export const WEDGES: readonly Wedge[] = [
   { label: "Free Spin", color: "#22d3ee" },
 ] as const;
 
-// Label of the cooldown-restricted wedge (must match a label in WEDGES).
+// Label of the session-restricted wedge (must match a label in WEDGES). The
+// Switch wedge is gated by a per-session eligibility window — see
+// `pickWedgeWithSwitchWindow` in game.ts.
 export const SWITCH_LABEL = "Nintendo Switch";
 
-// localStorage key used to persist the timestamp of the last Switch win.
-export const SWITCH_LAST_WIN_KEY = "wof:lastSwitchWinAt";
+// Label of the free-spin wedge: when the wheel lands here the bonus is not
+// consumed and the prize modal is suppressed (must match a label in WEDGES).
+export const FREE_SPIN_LABEL = "Free Spin";
 
-// Cooldown window for the Nintendo Switch wedge: 24 hours in ms.
-export const SWITCH_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+// sessionStorage keys used by the Switch eligibility-window logic. A "session"
+// is a single browser tab/pageload — values survive same-tab refresh but reset
+// on tab close (the desired behavior).
+export const SESSION_START_KEY = "wof:sessionStartAt";
+export const SWITCH_WINDOW_OFFSET_KEY = "wof:switchWindowOffsetMs";
+export const SWITCH_WON_KEY = "wof:switchWonAt";
+
+// Bounds (ms) for the random eligibility offset T picked at session start:
+// the Switch wedge becomes eligible at `sessionStartAt + T`, where T is drawn
+// uniformly from [3h, 6h).
+export const SWITCH_WINDOW_MIN_MS = 3 * 60 * 60 * 1000;
+export const SWITCH_WINDOW_MAX_MS = 6 * 60 * 60 * 1000;
 
 // Reel animation tunables.
 export const REEL_SPIN_BASE_MS = 1400; // first reel
