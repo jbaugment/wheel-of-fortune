@@ -81,16 +81,21 @@ function init(): void {
     if (!state.bonusAvailable) return;
     setBusy(true);
     const target = pickWedgeWithCooldown(WEDGES, Math.random);
+    // Use the wedge the wheel actually stopped on as the source of truth so
+    // the modal can never disagree with the pointer (falls back to the picked
+    // target if the animation rejects).
+    let landedLabel = target.label;
     try {
-      await wheelView.spinTo(target, Math.random);
+      const landed = await wheelView.spinTo(target, Math.random);
+      landedLabel = landed.label;
     } finally {
       // Bonus is consumed regardless of animation outcome.
       state.bonusAvailable = false;
-      state.lastPrize = target.label;
+      state.lastPrize = landedLabel;
       setBusy(false);
     }
     sound.prizeChime();
-    modalLabel.textContent = target.label;
+    modalLabel.textContent = landedLabel;
     modal.classList.remove("hidden");
     refreshUi();
   });

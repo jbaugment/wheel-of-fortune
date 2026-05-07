@@ -11,6 +11,9 @@ import {
   WEDGES,
   type Wedge,
 } from "../config";
+import { computeFinalRotation, wedgeIndexAtPointer } from "../wheel";
+
+const TAU = Math.PI * 2;
 
 /** Mulberry32 — small seeded PRNG, plenty good for statistical tests. */
 function mulberry32(seed: number): () => number {
@@ -223,5 +226,102 @@ describe("pickWedgeWithCooldown — Nintendo Switch 24h cooldown", () => {
     });
     expect(picked.label).not.toBe(SWITCH_LABEL);
     expect(storage.getItem(SWITCH_LAST_WIN_KEY)).toBeNull();
+  });
+});
+
+describe("wedgeIndexAtPointer", () => {
+  // Wedges are drawn starting at canvas-angle 0 (3 o'clock) clockwise. With
+  // 8 wedges and rotation 0, wedge i covers [i*π/4, (i+1)*π/4]. The pointer
+  // sits at canvas-angle -π/2 ≡ 3π/2, which is the start of wedge 6 — the
+  // wedge centered at 12 o'clock when no rotation is applied (one half-wedge
+  // CW of straight up). This is the source-of-truth lookup used by spinTo.
+  it("with 8 wedges and rotation 0, the pointer at -π/2 sits on wedge 6", () => {
+    expect(wedgeIndexAtPointer(0, 8)).toBe(6);
+  });
+
+  it("rotating CW by exactly one wedge angle shifts the result by -1 (and CCW by +1)", () => {
+    const w = TAU / 8;
+    // Positive rotation = clockwise on screen. The wheel moves CW under the
+    // stationary pointer, so the wedge under the pointer shifts the other way
+    // (its index decreases by 1).
+    expect(wedgeIndexAtPointer(w, 8)).toBe(5);
+    expect(wedgeIndexAtPointer(2 * w, 8)).toBe(4);
+    // CCW rotation of one wedge increases the index by 1.
+    expect(wedgeIndexAtPointer(-w, 8)).toBe(7);
+  });
+
+  it("rotating by TAU returns the same wedge as rotation 0", () => {
+    expect(wedgeIndexAtPointer(TAU, 8)).toBe(wedgeIndexAtPointer(0, 8));
+    expect(wedgeIndexAtPointer(-TAU, 8)).toBe(wedgeIndexAtPointer(0, 8));
+  });
+
+  it("a tiny rotation past a wedge boundary picks the next wedge (and just before, the previous)", () => {
+    const w = TAU / 8;
+    const eps = 1e-9;
+    // At rotation 0 we're at wedge 6 — exactly the boundary 5/6, which floor
+    // resolves to 6. Nudging rotation by +eps puts the pointer just before
+    // that boundary in drawing space, landing on wedge 5; nudging by -eps
+    // puts it just past, landing on wedge 6.
+    expect(wedgeIndexAtPointer(eps, 8)).toBe(5);
+    expect(wedgeIndexAtPointer(-eps, 8)).toBe(6);
+    // Same idea around the next boundary one wedge later.
+    expect(wedgeIndexAtPointer(w + eps, 8)).toBe(4);
+    expect(wedgeIndexAtPointer(w - eps, 8)).toBe(5);
+  });
+
+  it("throws when wedgeCount is non-positive", () => {
+    expect(() => wedgeIndexAtPointer(0, 0)).toThrow();
+    expect(() => wedgeIndexAtPointer(0, -1)).toThrow();
+  });
+});
+
+describe("computeFinalRotation round-trip", () => {
+  // For every wedge in WEDGES, regardless of jitter / extra-turn RNG draws
+  // and starting rotation, the final rotation must place that wedge under
+  // the pointer. This is the contract that protects spinTo from the kind of
+  // sign / fractional-turn drift that originally caused the modal-vs-pointer
+  // mismatch reported in the bug.
+  it("lands the picked wedge under the pointer for every wedge across many RNG draws", () => {
+    const rng = mulberry32(0xc0ffee);
+    for (let idx = 0; idx < WEDGES.length; idx++) {
+      for (let trial = 0; trial < 64; trial++) {
+        const startRotation = rng() * TAU;
+        const finalRotation = computeFinalRotation(
+          idx,
+          WEDGES.length,
+          startRotation,
+          rng,
+          rng,
+        );
+        expect(wedgeIndexAtPointer(finalRotation, WEDGES.length)).toBe(idx);
+      }
+    }
+  });
+
+  it("always spins forward by at least WHEEL_MIN_FULL_TURNS turns", () => {
+    const rng = mulberry32(7);
+    const minTurns = 4; // matches WHEEL_MIN_FULL_TURNS in config
+    for (let idx = 0; idx < WEDGES.length; idx++) {
+      const start = rng() * TAU;
+      const final = computeFinalRotation(idx, WEDGES.length, start, rng, rng);
+      expect(final - start).toBeGreaterThan(minTurns * TAU);
+    }
+  });
+
+  it("does not add fractional extra turns (so fullTurnsRng never shifts the landed wedge)", () => {
+    // With the same jitter draw but two different fullTurnsRng draws, the
+    // landed wedge must be identical — i.e. the extra-turn term is always
+    // a multiple of TAU.
+    for (let idx = 0; idx < WEDGES.length; idx++) {
+      const jitterValue = 0.42;
+      const jitter = (): number => jitterValue;
+      const a = computeFinalRotation(idx, WEDGES.length, 0, jitter, () => 0.1);
+      const b = computeFinalRotation(idx, WEDGES.length, 0, jitter, () => 0.9);
+      expect(wedgeIndexAtPointer(a, WEDGES.length)).toBe(
+        wedgeIndexAtPointer(b, WEDGES.length),
+      );
+      // And both still land on the picked wedge.
+      expect(wedgeIndexAtPointer(a, WEDGES.length)).toBe(idx);
+    }
   });
 });
