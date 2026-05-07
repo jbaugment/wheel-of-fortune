@@ -5,8 +5,9 @@ import { FREE_SPIN_LABEL, WEDGES } from "./config";
 import {
   advanceAfterReelSpin,
   createInitialState,
+  ensureSessionStarted,
   isTripleWheel,
-  pickWedgeWithCooldown,
+  pickWedgeWithSwitchWindow,
 } from "./game";
 import { ReelsView } from "./reels";
 import { WheelView } from "./wheel";
@@ -81,6 +82,9 @@ function init(): void {
   };
 
   spinReelsBtn.addEventListener("click", async () => {
+    // First reels press of the session starts the Switch eligibility timer
+    // (idempotent on subsequent presses).
+    ensureSessionStarted(Date.now(), window.sessionStorage, Math.random);
     setBusy(true);
     reelsStatusEl.textContent = "Spinning…";
     const outcome = advanceAfterReelSpin(state, Math.random);
@@ -105,7 +109,7 @@ function init(): void {
   spinWheelBtn.addEventListener("click", async () => {
     if (!state.bonusAvailable) return;
     setBusy(true);
-    const target = pickWedgeWithCooldown(WEDGES, Math.random);
+    const target = pickWedgeWithSwitchWindow(WEDGES, Math.random);
     // Use the wedge the wheel actually stopped on as the source of truth so
     // the modal can never disagree with the pointer (falls back to the picked
     // target if the animation rejects). `landed` is null when the animation

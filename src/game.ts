@@ -4,9 +4,12 @@
 import {
   GUARANTEED_TRIPLE_WHEEL_AT,
   REEL_SYMBOLS,
-  SWITCH_COOLDOWN_MS,
+  SESSION_START_KEY,
   SWITCH_LABEL,
-  SWITCH_LAST_WIN_KEY,
+  SWITCH_WINDOW_MAX_MS,
+  SWITCH_WINDOW_MIN_MS,
+  SWITCH_WINDOW_OFFSET_KEY,
+  SWITCH_WON_KEY,
   type ReelSymbol,
   type Wedge,
 } from "./config";
@@ -73,72 +76,123 @@ export function pickWedge(wedges: readonly Wedge[], rng: () => number): Wedge {
 }
 
 /**
- * Minimal Storage-like interface so the cooldown logic can be tested without
- * a real `localStorage`. Only the methods we use are required.
+ * Minimal Storage-like interface so the session-window logic can be tested
+ * without a real `sessionStorage`. Only the methods we use are required.
  */
-export interface CooldownStorage {
+export interface SessionStorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
 }
 
-export interface CooldownOptions {
+export interface SwitchWindowOptions {
   /** Returns the current epoch ms. Defaults to `Date.now`. */
   now?: () => number;
-  /** Storage backend. Defaults to `window.localStorage` when available. */
-  storage?: CooldownStorage | null;
+  /** Storage backend. Defaults to `window.sessionStorage` when available. */
+  storage?: SessionStorageLike | null;
 }
 
-function defaultStorage(): CooldownStorage | null {
+function defaultStorage(): SessionStorageLike | null {
   if (typeof window === "undefined") return null;
   try {
-    return window.localStorage;
+    return window.sessionStorage;
   } catch {
     return null;
   }
 }
 
-/** Read the timestamp of the last Switch win, or null if not present/invalid. */
-export function readLastSwitchWinAt(
-  storage: CooldownStorage | null,
+function readNumber(
+  storage: SessionStorageLike | null,
+  key: string,
 ): number | null {
   if (!storage) return null;
-  const raw = storage.getItem(SWITCH_LAST_WIN_KEY);
+  const raw = storage.getItem(key);
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function readTimestamp(
+  storage: SessionStorageLike | null,
+  key: string,
+): number | null {
+  if (!storage) return null;
+  const raw = storage.getItem(key);
   if (!raw) return null;
   const t = Date.parse(raw);
   return Number.isFinite(t) ? t : null;
 }
 
-/** True if the Nintendo Switch wedge is currently on cooldown. */
-export function isSwitchOnCooldown(
+/**
+ * Initialize the per-session Switch eligibility window on the first reels
+ * spin of the session. Persists `sessionStartAt` and a random offset T (in
+ * `[3h, 6h)` ms) to sessionStorage. Idempotent: subsequent calls are no-ops
+ * once both keys are present.
+ *
+ * Called from the SPIN REELS click handler so the timer starts when the
+ * player actually starts playing — not at pageload.
+ */
+export function ensureSessionStarted(
   now: number,
-  storage: CooldownStorage | null,
-): boolean {
-  const last = readLastSwitchWinAt(storage);
-  if (last == null) return false;
-  return now - last < SWITCH_COOLDOWN_MS;
+  storage: SessionStorageLike | null,
+  rng: () => number,
+): void {
+  if (!storage) return;
+  if (
+    storage.getItem(SESSION_START_KEY) != null &&
+    storage.getItem(SWITCH_WINDOW_OFFSET_KEY) != null
+  ) {
+    return;
+  }
+  const span = SWITCH_WINDOW_MAX_MS - SWITCH_WINDOW_MIN_MS;
+  const offset = SWITCH_WINDOW_MIN_MS + Math.floor(rng() * span);
+  storage.setItem(SESSION_START_KEY, new Date(now).toISOString());
+  storage.setItem(SWITCH_WINDOW_OFFSET_KEY, String(offset));
 }
 
 /**
- * Wrapper around `pickWedge` that enforces the 24h cooldown on the Nintendo
- * Switch wedge. When the Switch is on cooldown it is excluded from the random
- * draw and a wedge is picked from the remaining wedges using their weights.
- * When the picked wedge is the Switch, the current timestamp is persisted.
+ * True iff the Switch wedge is eligible to be drawn right now, given the
+ * session-start timestamp and the random offset persisted at session start.
+ * Switch is ineligible when:
+ *   - the session hasn't started (no SPIN REELS press yet), or
+ *   - we're still inside the eligibility window (`now < start + T`), or
+ *   - Switch has already been won this session.
+ * Boundary `now == start + T` is eligible (half-open window is *exclusion*).
+ */
+export function isSwitchEligible(
+  now: number,
+  storage: SessionStorageLike | null,
+): boolean {
+  if (!storage) return false;
+  if (storage.getItem(SWITCH_WON_KEY) != null) return false;
+  const start = readTimestamp(storage, SESSION_START_KEY);
+  const offset = readNumber(storage, SWITCH_WINDOW_OFFSET_KEY);
+  if (start == null || offset == null) return false;
+  return now >= start + offset;
+}
+
+/**
+ * Wrapper around `pickWedge` that enforces the per-session eligibility
+ * window for the Nintendo Switch wedge. When Switch is ineligible it is
+ * filtered out and selection runs over the remaining wedges with their
+ * normal weights (effectively re-normalized over the smaller set). When
+ * Switch is picked, the won-at timestamp is persisted so it can't win
+ * again in the same session.
  *
  * `pickWedge` is left untouched so its behavior remains pure and predictable.
  */
-export function pickWedgeWithCooldown(
+export function pickWedgeWithSwitchWindow(
   wedges: readonly Wedge[],
   rng: () => number,
-  opts: CooldownOptions = {},
+  opts: SwitchWindowOptions = {},
 ): Wedge {
   const now = (opts.now ?? Date.now)();
   const storage = opts.storage === undefined ? defaultStorage() : opts.storage;
-  const eligible = isSwitchOnCooldown(now, storage)
-    ? wedges.filter((w) => w.label !== SWITCH_LABEL)
-    : wedges;
+  const eligible = isSwitchEligible(now, storage)
+    ? wedges
+    : wedges.filter((w) => w.label !== SWITCH_LABEL);
   const picked = pickWedge(eligible, rng);
   if (picked.label === SWITCH_LABEL && storage) {
-    storage.setItem(SWITCH_LAST_WIN_KEY, new Date(now).toISOString());
+    storage.setItem(SWITCH_WON_KEY, new Date(now).toISOString());
   }
   return picked;
 }
