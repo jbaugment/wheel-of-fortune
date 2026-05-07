@@ -1,7 +1,7 @@
 // Entry point: wires UI buttons, modal, sound toggle, and game state.
 
 import { SoundController } from "./audio";
-import { WEDGES } from "./config";
+import { FREE_SPIN_LABEL, WEDGES } from "./config";
 import {
   advanceAfterReelSpin,
   createInitialState,
@@ -13,6 +13,14 @@ import { WheelView } from "./wheel";
 
 // Words spoken (per reel) when that reel lands on the Wheel symbol.
 const REEL_WHEEL_WORDS = ["Wheel", "Of", "Fortune"] as const;
+
+// How long the transient "Free Spin!" banner stays visible.
+const FREE_SPIN_STATUS_MS = 2500;
+
+// Approximate gap (ms) after the spoken "Fortune" before the bell melody
+// starts on a triple-Wheel — long enough that the bells don't talk over the
+// final word but short enough to feel like a payoff.
+const BELLS_AFTER_FORTUNE_MS = 700;
 
 function byId<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -27,6 +35,7 @@ function init(): void {
   const spinWheelBtn = byId<HTMLButtonElement>("spin-wheel-btn");
   const soundToggle = byId<HTMLButtonElement>("sound-toggle");
   const reelsStatusEl = byId<HTMLElement>("reels-status");
+  const wheelStatusEl = byId<HTMLElement>("wheel-status");
   const lastPrizeEl = byId<HTMLElement>("last-prize");
   const modal = byId<HTMLElement>("prize-modal");
   const modalLabel = byId<HTMLElement>("prize-modal-label");
@@ -43,6 +52,19 @@ function init(): void {
     const word = REEL_WHEEL_WORDS[reelIndex];
     if (word) sound.speak(word);
   });
+  wheelView.setOnTick(() => sound.tick());
+
+  let wheelStatusTimer: number | null = null;
+  const flashWheelStatus = (text: string): void => {
+    wheelStatusEl.textContent = text;
+    if (wheelStatusTimer != null) {
+      window.clearTimeout(wheelStatusTimer);
+    }
+    wheelStatusTimer = window.setTimeout(() => {
+      wheelStatusEl.textContent = "";
+      wheelStatusTimer = null;
+    }, FREE_SPIN_STATUS_MS);
+  };
 
   const refreshUi = (): void => {
     spinWheelBtn.disabled = !state.bonusAvailable;
@@ -71,6 +93,9 @@ function init(): void {
       reelsStatusEl.textContent = "🎉 Triple Wheel! Bonus unlocked.";
       reelsView.flashWin();
       sound.winChime();
+      // Play the bell flourish shortly after the spoken "Fortune" so the
+      // melody lands as a payoff rather than talking over the final word.
+      window.setTimeout(() => sound.bells(), BELLS_AFTER_FORTUNE_MS);
     } else {
       reelsStatusEl.textContent = `Result: ${outcome.join(" • ")}`;
     }
@@ -83,20 +108,31 @@ function init(): void {
     const target = pickWedgeWithCooldown(WEDGES, Math.random);
     // Use the wedge the wheel actually stopped on as the source of truth so
     // the modal can never disagree with the pointer (falls back to the picked
-    // target if the animation rejects).
+    // target if the animation rejects). `landed` is null when the animation
+    // rejects — in that case we fall back to the picked target's label and
+    // skip the Free-Spin special case (treat it as a normal prize).
     let landedLabel = target.label;
+    let isFreeSpin = false;
     try {
       const landed = await wheelView.spinTo(target, Math.random);
       landedLabel = landed.label;
+      isFreeSpin = landed.label === FREE_SPIN_LABEL;
     } finally {
-      // Bonus is consumed regardless of animation outcome.
-      state.bonusAvailable = false;
-      state.lastPrize = landedLabel;
+      if (!isFreeSpin) {
+        // Bonus is consumed and the prize recorded only on a non-free-spin
+        // landing — Free Spin keeps the bonus and is announced transiently.
+        state.bonusAvailable = false;
+        state.lastPrize = landedLabel;
+      }
       setBusy(false);
     }
     sound.prizeChime();
-    modalLabel.textContent = landedLabel;
-    modal.classList.remove("hidden");
+    if (isFreeSpin) {
+      flashWheelStatus("🎡 Free Spin! Spin again.");
+    } else {
+      modalLabel.textContent = landedLabel;
+      modal.classList.remove("hidden");
+    }
     refreshUi();
   });
 

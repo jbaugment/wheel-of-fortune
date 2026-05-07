@@ -75,11 +75,36 @@ export function computeFinalRotation(
   return currentRotation + (WHEEL_MIN_FULL_TURNS + extraTurns) * TAU + delta;
 }
 
+/**
+ * Number of wedge boundaries the pointer crosses as the wheel rotates from
+ * `prevRotation` to `currRotation`. Rotation is monotonic during a spin, so
+ * the count is simply the difference of `floor(rotation / wedgeAngle)` between
+ * the two endpoints. Used to drive the per-wedge tick sound during animation.
+ */
+export function wedgeBoundaryCrossings(
+  prevRotation: number,
+  currRotation: number,
+  wedgeCount: number,
+): number {
+  if (wedgeCount <= 0) {
+    throw new Error("wedgeBoundaryCrossings: wedgeCount must be positive");
+  }
+  const wedgeAngle = TAU / wedgeCount;
+  const prev = Math.floor(prevRotation / wedgeAngle);
+  const curr = Math.floor(currRotation / wedgeAngle);
+  return Math.abs(curr - prev);
+}
+
+export interface WheelTickHandler {
+  (): void;
+}
+
 export class WheelView {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly canvas: HTMLCanvasElement;
   private readonly wedges: readonly Wedge[];
   private currentRotation = 0; // radians
+  private onTick: WheelTickHandler | null = null;
 
   constructor(canvas: HTMLCanvasElement, wedges: readonly Wedge[] = WEDGES) {
     this.canvas = canvas;
@@ -88,6 +113,11 @@ export class WheelView {
     this.ctx = ctx;
     this.wedges = wedges;
     this.draw();
+  }
+
+  /** Fires once per wedge boundary the pointer crosses while spinning. */
+  setOnTick(handler: WheelTickHandler | null): void {
+    this.onTick = handler;
   }
 
   /**
@@ -119,9 +149,19 @@ export class WheelView {
       const step = (now: number): void => {
         const t = Math.min(1, (now - startTime) / duration);
         const eased = easeOutCubic(t);
-        this.currentRotation =
+        const prevRotation = this.currentRotation;
+        const nextRotation =
           startRotation + (totalRotation - startRotation) * eased;
+        this.currentRotation = nextRotation;
         this.draw();
+        if (this.onTick) {
+          const ticks = wedgeBoundaryCrossings(
+            prevRotation,
+            nextRotation,
+            this.wedges.length,
+          );
+          for (let i = 0; i < ticks; i++) this.onTick();
+        }
         if (t < 1) {
           requestAnimationFrame(step);
         } else {

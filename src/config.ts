@@ -45,6 +45,10 @@ export const WEDGES: readonly Wedge[] = [
 // Label of the cooldown-restricted wedge (must match a label in WEDGES).
 export const SWITCH_LABEL = "Nintendo Switch";
 
+// Label of the free-spin wedge: when the wheel lands here the bonus is not
+// consumed and the prize modal is suppressed (must match a label in WEDGES).
+export const FREE_SPIN_LABEL = "Free Spin";
+
 // localStorage key used to persist the timestamp of the last Switch win.
 export const SWITCH_LAST_WIN_KEY = "wof:lastSwitchWinAt";
 

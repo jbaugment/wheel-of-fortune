@@ -11,7 +11,12 @@ import {
   WEDGES,
   type Wedge,
 } from "../config";
-import { computeFinalRotation, wedgeIndexAtPointer } from "../wheel";
+import {
+  computeFinalRotation,
+  wedgeBoundaryCrossings,
+  wedgeIndexAtPointer,
+} from "../wheel";
+import { SoundController } from "../audio";
 
 const TAU = Math.PI * 2;
 
@@ -323,5 +328,77 @@ describe("computeFinalRotation round-trip", () => {
       // And both still land on the picked wedge.
       expect(wedgeIndexAtPointer(a, WEDGES.length)).toBe(idx);
     }
+  });
+});
+
+describe("wedgeBoundaryCrossings", () => {
+  // The tick-sound hook fires once per wedge boundary the pointer crosses
+  // during a spin; this helper returns that count for a single animation
+  // step. Spins are monotonic but the helper accepts negative direction too
+  // (e.g. for tests).
+  it("returns 0 when both rotations are inside the same wedge slice", () => {
+    const w = TAU / 8;
+    expect(wedgeBoundaryCrossings(0, w * 0.4, 8)).toBe(0);
+    expect(wedgeBoundaryCrossings(w * 0.1, w * 0.9, 8)).toBe(0);
+  });
+
+  it("returns 1 when the rotation crosses exactly one boundary", () => {
+    const w = TAU / 8;
+    expect(wedgeBoundaryCrossings(w * 0.5, w * 1.5, 8)).toBe(1);
+    expect(wedgeBoundaryCrossings(0, w + 1e-9, 8)).toBe(1);
+  });
+
+  it("counts every boundary across multiple wedges and full turns", () => {
+    const w = TAU / 8;
+    // Cross 3 wedge boundaries within a single turn.
+    expect(wedgeBoundaryCrossings(0, w * 3.5, 8)).toBe(3);
+    // Two full turns plus a half wedge = 16 boundaries.
+    expect(wedgeBoundaryCrossings(0, 2 * TAU + w * 0.5, 8)).toBe(16);
+  });
+
+  it("matches the per-step count summed across a full spin", () => {
+    // Driving the helper with a sequence of monotonically-increasing
+    // rotations sums to the total boundaries crossed end-to-end.
+    const wedgeCount = 8;
+    const w = TAU / wedgeCount;
+    const samples = [0, w * 0.3, w * 0.7, w * 1.5, w * 4.2, w * 9.9];
+    let perStep = 0;
+    for (let i = 1; i < samples.length; i++) {
+      perStep += wedgeBoundaryCrossings(
+        samples[i - 1]!,
+        samples[i]!,
+        wedgeCount,
+      );
+    }
+    const endToEnd = wedgeBoundaryCrossings(
+      samples[0]!,
+      samples[samples.length - 1]!,
+      wedgeCount,
+    );
+    expect(perStep).toBe(endToEnd);
+    expect(endToEnd).toBe(9); // floor(9.9) - floor(0) = 9 boundaries
+  });
+
+  it("throws when wedgeCount is non-positive", () => {
+    expect(() => wedgeBoundaryCrossings(0, 1, 0)).toThrow();
+    expect(() => wedgeBoundaryCrossings(0, 1, -1)).toThrow();
+  });
+});
+
+describe("SoundController.bells", () => {
+  // The bells flourish must be a no-op when sound is disabled — exactly the
+  // same contract `melody`/`getCtx` already enforce for the other chimes
+  // (winChime, prizeChime). The vitest environment is "node", so the only
+  // safely-exercisable path here is the disabled one (the enabled path
+  // touches `window.AudioContext`).
+  it("does not throw when sound is disabled", () => {
+    const sound = new SoundController();
+    sound.setEnabled(false);
+    expect(() => sound.bells()).not.toThrow();
+  });
+
+  it("is exposed on the SoundController public API", () => {
+    const sound = new SoundController();
+    expect(typeof sound.bells).toBe("function");
   });
 });
